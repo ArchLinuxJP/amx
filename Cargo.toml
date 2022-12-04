@@ -1,0 +1,24 @@
+[package]
+name = "amx"
+version = "0.0.1"
+edition = "2021"
+authors = ["syui <syui@syui.cf>"]
+
+[dependencies]
+anyhow = "*"
+tokio = { version = "1.20.1", features = ["macros", "rt-multi-thread"] }
+tracing-subscriber = "0.3.15"
+matrix-sdk = "*"
+url = "2.2.2"
+futures = "0.3.5"
+seahorse = "*"
+dotenv = "0.15"
+mammut = "0.13.0"
+serde_derive = "1.0"
+serde_json = "1.0"
+serde = "*"
+config = { git = "https://github.com/mehcode/config-rs", branch = "master" }
+shellexpand = "*"
+curl = "*"
+image = "*"
+os_type = "2.4"
