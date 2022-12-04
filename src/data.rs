@@ -10,11 +10,12 @@ pub struct Data {
     pub username: Cow<'static, str>,
     pub password: Cow<'static, str>,
     pub room_alias: Cow<'static, str>,
+    pub room_id: Cow<'static, str>,
 }
 
 impl Data {
     pub fn new() -> Result<Self, ConfigError> {
-        let d = shellexpand::tilde("~") + "/.config/aroom/config.toml";
+        let d = shellexpand::tilde("~") + "/.config/amx/config.toml";
         let s = Config::builder()
             .add_source(File::with_name(&d))
             .add_source(config::Environment::with_prefix("APP"))
