@@ -1,1 +1,6 @@
 /target
+*.json
+*.txt
+vim
+.DS_Store
+*.lock
