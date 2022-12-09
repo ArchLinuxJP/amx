@@ -5,18 +5,13 @@ use seahorse::{App, Command, Context, Flag, FlagType};
 use std::env;
 use matrix_sdk::{
     Client, config::SyncSettings, room::Room,
-    //ruma::room_id,
-    ruma::RoomId,
-    //ruma::RoomOrAliasId,
-    //ruma::OwnedServerName,
+    //ruma::RoomId,
+    ruma::RoomAliasId,
     ruma::events::room::{
-        member::StrippedRoomMemberEvent,
         message::{MessageType, OriginalSyncRoomMessageEvent, RoomMessageEventContent},
     },
     self,
 };
-use tokio::time::{sleep, Duration};
-extern crate rustc_serialize;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -69,37 +64,12 @@ fn main() {
     app.run(args);
 }
 
-async fn on_stripped_state_member( room_member: StrippedRoomMemberEvent, client: Client, room: Room,) {
-    if room_member.state_key != client.user_id().unwrap() {
-        return;
-    }
-    if let Room::Invited(room) = room {
-        tokio::spawn(async move {
-            println!("Autojoining room {}", room.room_id());
-            let mut delay = 2;
-            while let Err(err) = room.accept_invitation().await {
-                eprintln!("Failed to join room {} ({err:?}), retrying in {delay}s", room.room_id());
-                sleep(Duration::from_secs(delay)).await;
-                delay *= 2;
-                if delay > 3600 {
-                    eprintln!("Can't join room {} ({err:?})", room.room_id());
-                    break;
-                }
-            }
-            println!("Successfully joined room {}", room.room_id());
-        });
-    }
-}
-
-async fn amx_timeline(event: OriginalSyncRoomMessageEvent, room: Room, client: Client) {
-    // https://docs.rs/matrix-sdk/latest/matrix_sdk/room/enum.Room.html
+async fn amx_timeline(event: OriginalSyncRoomMessageEvent, room: Room) {
     let Room::Joined(room) = room else { return };
-    // https://docs.rs/ruma/latest/ruma/events/room/message/struct.RoomMessageEventContent.html
-    let MessageType::Text(ref text_content) = event.content.msgtype else { return };
-    println!("{:#?} {:#?} {:#?}", room.own_user_id(), room.room_id(), text_content);
-    println!("{:#?}", event.content.body());
-    let rooms = client.get_joined_room(&room.room_id()).unwrap();
-    println!("{:#?}", rooms);
+    let room_id = room.room_id();
+    let u = event.sender;
+    let body = event.content.body();
+    println!("{} {} {}", room_id, u, body);
 }
 
 // すべてのroom.messageを監視し「!party」が投稿されると「test」と返すbot
@@ -114,7 +84,7 @@ async fn amx_timeline_bot(event: OriginalSyncRoomMessageEvent, room: Room) {
     }
 }
 
-async fn amx_timeline_client( homeserver_url: String, username: &str, password: &str, c: &Context) -> anyhow::Result<()> {
+async fn amx_timeline_client(homeserver_url: String, username: &str, password: &str, c: &Context) -> anyhow::Result<()> {
     #[allow(unused_mut)]
     let mut client_builder = Client::builder().homeserver_url(homeserver_url);
     #[cfg(feature = "sled")]
@@ -132,7 +102,6 @@ async fn amx_timeline_client( homeserver_url: String, username: &str, password: 
         .initial_device_display_name("amx")
         .send()
         .await?;
-    client.add_event_handler(on_stripped_state_member);
     let sync_token = client.sync_once(SyncSettings::default()).await.unwrap().next_batch;
 
     if let Ok(bot) = c.string_flag("bot") {
@@ -162,7 +131,7 @@ fn t(c: &Context){
     println!("{:#?}", client);
 }
 
-async fn amx_post_client( homeserver_url: String, username: &str, password: &str, c: &Context) -> anyhow::Result<()> {
+async fn amx_post_client(homeserver_url: String, username: &str, password: &str, c: &Context) -> anyhow::Result<()> {
     #[allow(unused_mut)]
     let mut client_builder = Client::builder().homeserver_url(homeserver_url);
     #[cfg(feature = "sled")]
@@ -186,7 +155,11 @@ async fn amx_post_client( homeserver_url: String, username: &str, password: &str
         let join: &str = &join;
         let message = c.args[0].to_string();
         let content = RoomMessageEventContent::text_plain(&message);
-        let room_id = <&RoomId>::try_from(join).unwrap();
+        let room_alias = <&RoomAliasId>::try_from(join).unwrap();
+        let room = client.resolve_room_alias(&room_alias).await?;
+        let room_id = room.room_id;
+        println!("{:#?}", room_id);
+        //let room_id = <&RoomId>::try_from(join).unwrap();
         if let Some(room) = client.get_joined_room(&room_id) {
             println!("{:#?}", join);
             room.send(content, None).await?;
@@ -210,7 +183,7 @@ fn p(c: &Context) {
     println!("{:#?}", client);
 }
 
-async fn amx_room_client( homeserver_url: String, username: &str, password: &str, c: &Context) -> anyhow::Result<()> {
+async fn amx_room_client(homeserver_url: String, username: &str, password: &str, c: &Context) -> anyhow::Result<()> {
     #[allow(unused_mut)]
     let mut client_builder = Client::builder().homeserver_url(homeserver_url);
     #[cfg(feature = "sled")]
@@ -229,19 +202,17 @@ async fn amx_room_client( homeserver_url: String, username: &str, password: &str
         .send()
         .await?;
     client.sync_once(SyncSettings::default()).await.unwrap().next_batch;
-
-    let b = client.joined_rooms();
     if let Ok(join) = c.string_flag("join") {
         let join: &str = &join;
-        let room_id = <&RoomId>::try_from(join).unwrap();
-        // https://docs.rs/matrix-sdk/latest/matrix_sdk/struct.Client.html#method.join_room_by_id_or_alias
-        // let alias = <&RoomOrAliasId>::try_from(join).unwrap();
-        // let server_names = <&[OwnedServerName]>::try_from(server).unwrap();
-        // client.join_room_by_id_or_alias(&alias, &server_names);
-        let a = client.join_room_by_id(&room_id).await?;
+        let room_alias = <&RoomAliasId>::try_from(join).unwrap();
+        let room = client.resolve_room_alias(&room_alias).await?;
+        let room_id = room.room_id;
+        println!("{:#?}", room_id);
+        client.join_room_by_id(&room_id).await?;
+    } else {
+        let a = client.joined_rooms();
         println!("{:#?}", a);
     }
-    println!("{:#?}", b);
     Ok(())
 }
 

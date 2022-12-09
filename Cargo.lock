@@ -54,13 +54,13 @@ dependencies = [
  "matrix-sdk",
  "os_type",
  "ruma",
- "rustc-serialize",
  "seahorse",
  "serde",
  "serde_derive",
  "serde_json",
  "shellexpand",
  "tokio",
+ "tokio-stream",
  "tracing-subscriber",
 ]
 
@@ -2033,12 +2033,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rustc-serialize"
-version = "0.3.24"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcf128d1287d2ea9d80910b5f1120d0b8eede3fbf1abe91c40d39ea7d51e6fda"
-
-[[package]]
 name = "ryu"
 version = "1.0.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2379,6 +2373,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f7d995660bd2b7f8c1568414c1126076c13fbb725c40112dc0120b78eb9b717b"
 dependencies = [
  "native-tls",
+ "tokio",
+]
+
+[[package]]
+name = "tokio-stream"
+version = "0.1.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "d660770404473ccd7bc9f8b28494a811bc18542b915c0855c51e8f419d5223ce"
+dependencies = [
+ "futures-core",
+ "pin-project-lite",
  "tokio",
 ]
 

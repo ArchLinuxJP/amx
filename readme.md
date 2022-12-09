@@ -23,15 +23,20 @@ $ amx
 ## use
 
 ```sh
-# timeline
+# timeline(sync)
 $ amx t
+
+# start bot(sync)
 $ amx t -bot
 
-# post message
-$ amx p "hello world." -j '!example:matrix.org'
+# message post
+$ amx p "hello world" -j '#ArchLinuxJP_general:gitter.im'
 
-# room join
-$ amx r -j '!example:matrix.org'
+# join room
+$ amx r -j '#ArchLinuxJP_general:gitter.im'
+
+# joined room info
+$ amx r
 ```
 
 ## config
