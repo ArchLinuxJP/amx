@@ -37,6 +37,10 @@ $ amx r -j '#ArchLinuxJP_general:gitter.im'
 
 # joined room info
 $ amx r
+
+# change account
+$ amx a -d
+$ amx a -s
 ```
 
 ## config
@@ -48,7 +52,6 @@ home_server = ""
 access_token = ""
 username = ""
 password = ""
-room_alias = ""
 room_id = ""
 ```
 
@@ -60,7 +63,37 @@ $ curl -XGET "https://localhost:8448/_matrix/client/r0/login"
 $ curl -XPOST -d '{"type":"m.login.password", "user":"example", "password":"wordpass"}' "https://localhost:8448/_matrix/client/r0/login"
 ```
 
-ref : 
+## vimrc
+
+https://vim-jp.org/reading-vimrc
+
+```sh
+# bot account
+$ vim dendrite.yaml
+- registration_disabled: true
+- enable_registration_captcha: false
++ registration_disabled: false
++ enable_registration_captcha: true
+
+$ ssh dendrite
+# https://matrix-org.github.io/dendrite/administration/createusers
+$ /usr/bin/create-account -config /etc/dendrite/dendrite.yaml -username xxx -password xxx
+```
+
+```sh
+# start
+$ rm -rf ~/.config/amx/vimrc
+$ cp vimrc.zsh ~/.config/amx/
+$ vimrc.zsh
+
+$ amx a -s
+$ amx r -j '#vim-jp_reading-vimrc:gitter.im'
+$ amx t --type vimrc
+```
+
+fcron : 日時: 毎週土曜日夜23時(JST)
+
+### ref
 
 https://docs.rs/matrix-sdk/latest
 

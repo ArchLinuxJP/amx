@@ -9,7 +9,6 @@ pub struct Data {
     pub access_token: Cow<'static, str>,
     pub username: Cow<'static, str>,
     pub password: Cow<'static, str>,
-    pub room_alias: Cow<'static, str>,
     pub room_id: Cow<'static, str>,
 }
 

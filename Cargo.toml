@@ -1,6 +1,6 @@
 [package]
 name = "amx"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2021"
 authors = ["syui <syui@syui.cf>"]
 
@@ -20,3 +20,5 @@ config = { git = "https://github.com/mehcode/config-rs", branch = "master" }
 shellexpand = "*"
 os_type = "2.4"
 ruma = "*"
+curl = "*"
+dirs = "*"
