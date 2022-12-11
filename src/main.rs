@@ -1,7 +1,9 @@
 pub mod data;
+extern crate serde;
+
 use data::Data as Datas;
+use data::Datam as Datasm;
 use seahorse::{App, Command, Context, Flag, FlagType};
-//use serde::{Deserialize, Serialize};
 use std::env;
 use matrix_sdk::{
     Client, config::SyncSettings, room::Room,
@@ -15,7 +17,13 @@ use matrix_sdk::{
 use std::path::Path;
 use std::fs;
 use std::io::prelude::*;
-//use curl::easy::Easy;
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+struct Setting {
+    user: String,
+    auto: bool,
+}
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -27,58 +35,63 @@ fn main() {
         .command(
             Command::new("accont")
             .usage("msr a {}")
-            .description("account change, ex : $ msr a ~/test.toml, $ amx a -d(setting.toml)")
+            .description("account change (ex : $ amx a -d (<-account.toml), $ amx -s (<-social.toml), $ amx -a ~/test.toml")
             .alias("a")
             .action(a),
             )
         .command(
             Command::new("timeline")
             .usage("amx timeline")
-            .description("timeline")
+            .description("timeline(ex : $amx t)")
             .action(t)
             .alias("t")
             .flag(
                 Flag::new("type", FlagType::String)
-                .description("type flag(ex: $ amx t --type bot)")
+                .description("type flag(ex: $ amx t --type {test,vimrc})")
+                )
+            .flag(
+                Flag::new("user", FlagType::String)
+                .description("user flag(ex: $ amx t --type vimrc -u @syui:syui.cf)")
+                .alias("u"),
                 )
             )
         .command(
             Command::new("post")
             .usage("amx post {}")
-            .description("post room")
+            .description("post room(ex: $ amx p message -j '#example:matrix.org')")
             .action(p)
             .alias("p")
             .flag(
                 Flag::new("join", FlagType::String)
-                .description("join flag(ex: $ amx p message -j '#ArchLinuxJP_general:gitter.im')")
+                .description("join flag (ex: $ amx p message -j '#example:matrix.org')")
                 .alias("j"),
                 )
             .flag(
                 Flag::new("id", FlagType::String)
-                .description("join room_id flag(ex: $ amx p message -i '!example:matrix.org')")
+                .description("join room_id flag (ex: $ amx p message -i '!example:matrix.org')")
                 .alias("i"),
+                )
+            .flag(
+                Flag::new("user", FlagType::String)
+                .description("user flag(ex: $ amx p message -u (<-config.toml:room_id))")
+                .alias("u"),
                 )
             )
         .command(
             Command::new("room")
             .usage("amx room")
-            .description("room")
+            .description("join room (ex: $ amx r -j '#example:matrix.org')")
             .action(r)
             .alias("r")
             .flag(
                 Flag::new("join", FlagType::String)
-                .description("join flag(ex: $ amx r -j '#example:matrix.org')")
+                .description("join flag (ex: $ amx r -j '#example:matrix.org')")
                 .alias("j"),
                 )
             .flag(
                 Flag::new("id", FlagType::String)
-                .description("join room_id flag(ex: $ amx r message -i '!example:matrix.org')")
+                .description("join room_id flag (ex: $ amx r message -i '!example:matrix.org')")
                 .alias("i"),
-                )
-            .flag(
-                Flag::new("user", FlagType::String)
-                .description("user flag(ex: $ amx r -u)")
-                .alias("u"),
                 )
             )
         ;
@@ -88,17 +101,24 @@ fn main() {
 fn get_domain_zsh() {
     let data = Datas::new().unwrap();
     let homeserver_url = (&data.home_server).to_string();
+    let username = (&data.username).to_string();
     let e = "export MATRIX_BASE=".to_owned() + &homeserver_url + "\n";
     let e = e.to_string();
+    let u = "export MATRIX_USER=".to_owned() + &username + "\n";
+    let u = u.to_string();
     let f = shellexpand::tilde("~") + "/.config/amx/amx.zsh";
     let f = f.to_string();
     let r = shellexpand::tilde("~") + "/.config/amx/amx.zsh";
     let r = r.to_string();
+    let fu = shellexpand::tilde("~") + "/.config/amx/amx.zsh";
+    let fu = fu.to_string();
     fs::remove_file(r).unwrap_or_else(|why| {
         println!("! {:?}", why.kind());
     });
     let mut f = fs::File::create(f).unwrap();
     f.write_all(e.as_bytes()).unwrap();
+    let mut fu = fs::File::create(fu).unwrap();
+    fu.write_all(u.as_bytes()).unwrap();
 }
 
 #[allow(unused_must_use)]
@@ -107,7 +127,7 @@ fn a(c: &Context)  {
     let o = shellexpand::tilde("~") + "/.config/amx/config.toml";
     let o = o.to_string();
     if &i == "-d" {
-        let i = shellexpand::tilde("~") + "/.config/amx/setting.toml";
+        let i = shellexpand::tilde("~") + "/.config/amx/account.toml";
         let i = i.to_string();
         println!("{:#?} -> {:#?}", i, o);
         fs::copy(i, o);
@@ -132,7 +152,7 @@ async fn amx_timeline(event: OriginalSyncRoomMessageEvent, room: Room) {
 }
 
 // test-bot:!party
-async fn amx_timeline_test_bot(event: OriginalSyncRoomMessageEvent, room: Room) {
+async fn amx_timeline_bot_test(event: OriginalSyncRoomMessageEvent, room: Room) {
     let Room::Joined(room) = room else { return };
     let MessageType::Text(text_content) = event.content.msgtype else { return };
     if text_content.body.contains("!party") {
@@ -197,59 +217,64 @@ fn vimrc_file_dl() {
 }
 
 // vimrc-bot:!filename.vim#1-2
-async fn amx_timeline_vimrc_bot(event: OriginalSyncRoomMessageEvent, room: Room) {
+async fn amx_timeline_bot_vimrc(event: OriginalSyncRoomMessageEvent, room: Room) {
     let Room::Joined(room) = room else { return };
     let MessageType::Text(text_content) = event.content.msgtype else { return };
 
-    // security
-    let s = "@syui:syui.cf";
+    let data = Datasm::new().unwrap();
+    let s = data.user;
     let u = &event.sender;
+    let auto = data.auto;
 
-    if text_content.body.contains("!") && s == *u {
-        let t = text_content.body.split_inclusive('!').collect::<Vec<_>>();
-        //let content = RoomMessageEventContent::text_plain(&t[1].to_string());
-        //room.send(content, None).await.unwrap();
+    //if text_content.body.contains("!") && s == *u || auto == true {
+    //↑  err panic
+    if text_content.body.contains("!") {
+        if s == *u || auto == true {
+            let t = text_content.body.split_inclusive('!').collect::<Vec<_>>();
 
-        let file = &t[1].to_string();
-        let tt = file.split_inclusive('#').collect::<Vec<_>>();
-        let file = &tt[0];
-        let line = &tt[1];
-        let tmp = line.split('-').collect::<Vec<_>>();
-        
-        println!("{:#?}", line);
-        let mut file: String = file.to_string();
-        let logs = "log.txt".to_string();
-        file.pop();
-        println!("{:#?}", file);
-        let path = "/.config/amx/vimrc/";
-        let file = path.to_string() + &file;
-        let logs = path.to_string() + &logs;
-        let mut f = shellexpand::tilde("~").to_string();
-        let mut p = shellexpand::tilde("~").to_string();
-        let mut l = shellexpand::tilde("~").to_string();
-        p.push_str(&path);
-        f.push_str(&file);
-        l.push_str(&logs);
-        println!("{:#?}", f);
-        println!("{:#?}", l);
+            let file = &t[1].to_string();
+            let tt = file.split_inclusive('#').collect::<Vec<_>>();
+            let file = &tt[0];
+            let line = &tt[1];
+            let tmp = line.split('-').collect::<Vec<_>>();
 
-        let check = Path::new(&f).exists();
-        if check == false {
-            println!("{}", "download vimrc");
-            vimrc_file_dl();
+            println!("{:#?}", line);
+            let mut file: String = file.to_string();
+            let logs = "log.txt".to_string();
+            file.pop();
+            println!("{:#?}", file);
+            let path = "/.config/amx/vimrc/";
+            let file = path.to_string() + &file;
+            let logs = path.to_string() + &logs;
+            let mut f = shellexpand::tilde("~").to_string();
+            let mut p = shellexpand::tilde("~").to_string();
+            let mut l = shellexpand::tilde("~").to_string();
+            p.push_str(&path);
+            f.push_str(&file);
+            l.push_str(&logs);
+            println!("{:#?}", f);
+            println!("{:#?}", l);
+
+            let check = Path::new(&f).exists();
+            if check == false {
+                println!("{}", "download vimrc");
+                vimrc_file_dl();
+            }
+
+            let line = tmp.iter().nth(0);
+            let end = tmp.iter().nth_back(0);
+            println!("{:#?}", end);
+            vimrc_file_read(f.to_string(), line.expect("REASON").to_string(), end.expect("REASON").to_string());
+            let o = fs::read_to_string(&l).expect("could not read file");
+            //let o = o.lines().collect::<String>();
+            let st = "<pre><code>";
+            let ed = "</code></pre>";
+            let oo =  st.to_owned() + &o.to_string() + &ed;
+            //#[cfg(feature = "markdown")]
+            //let content = RoomMessageEventContent::text_markdown(&oo);
+            let content = RoomMessageEventContent::text_html(&o, &oo);
+            room.send(content, None).await.unwrap();
         }
-
-        let line = tmp.iter().nth(0);
-        let end = tmp.iter().nth_back(0);
-        println!("{:#?}", end);
-        vimrc_file_read(f.to_string(), line.expect("REASON").to_string(), end.expect("REASON").to_string());
-        let o = fs::read_to_string(&l).expect("could not read file");
-        //let o = o.lines().collect::<String>();
-        let st = "<pre><code>";
-        let ed = "</code></pre>";
-        let oo =  st.to_owned() + &o.to_string() + &ed;
-        let content = RoomMessageEventContent::text_html(&o, &oo);
-        room.send(content, None).await.unwrap();
     }
     if text_content.body.contains("!rm vimrc") {
         println!("{}", "rm vimrc");
@@ -258,6 +283,40 @@ async fn amx_timeline_vimrc_bot(event: OriginalSyncRoomMessageEvent, room: Room)
 }
 
 async fn amx_timeline_client(homeserver_url: String, username: &str, password: &str, c: &Context) -> anyhow::Result<()> {
+
+    // setting.toml
+    let path = "/.config/amx/";
+    let file = path.to_string() + &"setting.toml";
+    let mut f = shellexpand::tilde("~").to_string();
+    f.push_str(&file);
+    println!("{}", f);
+    let check = Path::new(&f).exists();
+    if check == true {
+        let o = fs::read_to_string(&f)?;
+        println!("read {}", o);           
+    }
+    let mut f = fs::File::create(f)?;
+    if let Ok(user) = c.string_flag("user") {
+        let user = &*user.to_string();
+        let setting = Setting {
+            user: user.into(),
+            auto: false,
+        };
+        let toml = toml::to_string(&setting).unwrap();
+        write!(f, "{}", toml)?;
+        f.flush()?;
+        println!("\n#TOML:\n{}", toml);
+    } else {
+        let setting = Setting {
+            user: "all".to_string(),
+            auto: true,
+        };
+        let toml = toml::to_string(&setting).unwrap();
+        write!(f, "{}", toml)?;
+        f.flush()?;
+        println!("\n#TOML:\n{}", toml);
+    }
+
     #[allow(unused_mut)]
     let mut client_builder = Client::builder().homeserver_url(homeserver_url);
     #[cfg(feature = "sled")]
@@ -269,6 +328,7 @@ async fn amx_timeline_client(homeserver_url: String, username: &str, password: &
     {
         client_builder = client_builder.indexeddb_store("amx", None).await?;
     }
+
     let client = client_builder.build().await?;
     client
         .login_username(username, password)
@@ -276,11 +336,12 @@ async fn amx_timeline_client(homeserver_url: String, username: &str, password: &
         .send()
         .await?;
     let sync_token = client.sync_once(SyncSettings::default()).await.unwrap().next_batch;
+
     if let Ok(text) = c.string_flag("type") {
         let status = &*text.to_string();
             match &*status {
-                "vimrc" => client.add_event_handler(amx_timeline_vimrc_bot),
-                "test" => client.add_event_handler(amx_timeline_test_bot),
+                "vimrc" => client.add_event_handler(amx_timeline_bot_vimrc),
+                "test" => client.add_event_handler(amx_timeline_bot_test),
                 _ => client.add_event_handler(amx_timeline),
             };
     } else {
@@ -318,6 +379,11 @@ async fn amx_post_client(homeserver_url: String, username: &str, password: &str,
     {
         client_builder = client_builder.indexeddb_store("amx", None).await?;
     }
+    #[cfg(feature = "markdown")]
+    {
+        client_builder = client_builder.markdown_store("amx", None).await?;
+    }
+
     let client = client_builder.build().await?;
     client
         .login_username(username, password)
@@ -329,6 +395,7 @@ async fn amx_post_client(homeserver_url: String, username: &str, password: &str,
     if let Ok(join) = c.string_flag("join") {
         let message = c.args[0].to_string();
         let content = RoomMessageEventContent::text_plain(&message);
+        //let content = RoomMessageEventContent::text_plain(&message);
         let join: &str = &join;
         let room_alias = <&RoomAliasId>::try_from(join).unwrap();
         let room = client.resolve_room_alias(&room_alias).await?;
