@@ -29,6 +29,7 @@ impl Data {
 pub struct Datam {
     pub user: String,
     pub auto: bool,
+    pub room: String,
 }
 
 impl Datam {
@@ -41,3 +42,4 @@ impl Datam {
         s.try_deserialize()
     }
 }
+

@@ -25,15 +25,21 @@ $ amx
 ```sh
 # timeline(sync)
 $ amx t
+$ amx t -j '#example:matrix.org'
 
 # start bot(sync)
-$ amx t -bot
+$ amx t --type test
 
 # message post
-$ amx p "hello world" -j '#ArchLinuxJP_general:gitter.im'
+$ amx p "hello world" -j '#example:matrix.org'
+$ amx p "hello world" -i '!example:matrix.org'
+
+# message post : save room
+$ amx p "hello world" -r '!example:matrix.org'
+$ amx p "2"
 
 # join room
-$ amx r -j '#ArchLinuxJP_general:gitter.im'
+$ amx r -j '#example:matrix.org'
 
 # joined room info
 $ amx r
@@ -89,6 +95,9 @@ $ vimrc.zsh
 $ amx a -s
 $ amx r -j '#vim-jp_reading-vimrc:gitter.im'
 $ amx t --type vimrc
+
+# check user
+$ amx t --type vimrc -u @syui:syui.cf
 ```
 
 fcron : 日時: 毎週土曜日夜23時(JST)

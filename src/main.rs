@@ -17,12 +17,14 @@ use matrix_sdk::{
 use std::path::Path;
 use std::fs;
 use std::io::prelude::*;
+use std::io;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Setting {
     user: String,
     auto: bool,
+    room: String,
 }
 
 fn main() {
@@ -50,6 +52,11 @@ fn main() {
                 .description("type flag(ex: $ amx t --type {test,vimrc})")
                 )
             .flag(
+                Flag::new("join", FlagType::String)
+                .description("join flag(ex: $ amx t -j #example:matrix.org)")
+                .alias("j"),
+                )
+            .flag(
                 Flag::new("user", FlagType::String)
                 .description("user flag(ex: $ amx t --type vimrc -u @syui:syui.cf)")
                 .alias("u"),
@@ -72,9 +79,9 @@ fn main() {
                 .alias("i"),
                 )
             .flag(
-                Flag::new("user", FlagType::String)
-                .description("user flag(ex: $ amx p message -u (<-config.toml:room_id))")
-                .alias("u"),
+                Flag::new("room", FlagType::String)
+                .description("room save flag(ex: $ amx p message -r #example:matrix.org)")
+                .alias("r"),
                 )
             )
         .command(
@@ -141,6 +148,76 @@ fn a(c: &Context)  {
         fs::copy(i, o);
     }
     get_domain_zsh();
+}
+
+fn amx_setting_user(c: &Context) -> io::Result<()> {
+    let path = "/.config/amx/";
+    let file = path.to_string() + &"setting.toml";
+    let mut f = shellexpand::tilde("~").to_string();
+    f.push_str(&file);
+    println!("{}", f);
+    let check = Path::new(&f).exists();
+    if check == true {
+        let o = fs::read_to_string(&f)?;
+        println!("read {}", o);           
+    }
+    let mut f = fs::File::create(f)?;
+
+    if let Ok(user) = c.string_flag("user") {
+        let user = &*user.to_string();
+        let setting = Setting {
+            user: user.into(),
+            auto: false,
+            room: "".to_string(),
+        };
+        let toml = toml::to_string(&setting).unwrap();
+        write!(f, "{}", toml)?;
+        f.flush()?;
+        println!("\n#TOML:\n{}", toml);
+    } else {
+        let setting = Setting {
+            user: "all".to_string(),
+            auto: true,
+            room: "".to_string(),
+        };
+        let toml = toml::to_string(&setting).unwrap();
+        write!(f, "{}", toml)?;
+        f.flush()?;
+        println!("\n#TOML:\n{}", toml);
+    }
+    Ok(())
+}
+
+#[allow(unused_must_use)]
+fn amx_setting_room(c: &Context) -> io::Result<()> {
+    let path = "/.config/amx/";
+    let file = path.to_string() + &"setting.toml";
+    let mut f = shellexpand::tilde("~").to_string();
+    f.push_str(&file);
+    println!("{}", f);
+    let check = Path::new(&f).exists();
+    if check == true {
+        let o = fs::read_to_string(&f)?;
+        println!("read {}", o);           
+    }
+    let data = Datasm::new().unwrap();
+    let user = data.user;
+    let auto = data.auto;
+    let mut f = fs::File::create(f)?;
+
+    if let Ok(room) = c.string_flag("room") {
+        let room = &*room.to_string();
+        let setting = Setting {
+            user: user,
+            auto: auto,
+            room: room.into(),
+        };
+        let toml = toml::to_string(&setting).unwrap();
+        write!(f, "{}", toml)?;
+        f.flush()?;
+        println!("\n#TOML:\n{}", toml);
+    }
+    Ok(())
 }
 
 async fn amx_timeline(event: OriginalSyncRoomMessageEvent, room: Room) {
@@ -226,9 +303,8 @@ async fn amx_timeline_bot_vimrc(event: OriginalSyncRoomMessageEvent, room: Room)
     let u = &event.sender;
     let auto = data.auto;
 
-    //if text_content.body.contains("!") && s == *u || auto == true {
-    //↑  err panic
     if text_content.body.contains("!") {
+        //↑  && || err panic
         if s == *u || auto == true {
             let t = text_content.body.split_inclusive('!').collect::<Vec<_>>();
 
@@ -266,12 +342,10 @@ async fn amx_timeline_bot_vimrc(event: OriginalSyncRoomMessageEvent, room: Room)
             println!("{:#?}", end);
             vimrc_file_read(f.to_string(), line.expect("REASON").to_string(), end.expect("REASON").to_string());
             let o = fs::read_to_string(&l).expect("could not read file");
-            //let o = o.lines().collect::<String>();
             let st = "<pre><code>";
             let ed = "</code></pre>";
             let oo =  st.to_owned() + &o.to_string() + &ed;
-            //#[cfg(feature = "markdown")]
-            //let content = RoomMessageEventContent::text_markdown(&oo);
+            //let content = RoomMessageEventContent::text_markdown(&o);
             let content = RoomMessageEventContent::text_html(&o, &oo);
             room.send(content, None).await.unwrap();
         }
@@ -282,40 +356,9 @@ async fn amx_timeline_bot_vimrc(event: OriginalSyncRoomMessageEvent, room: Room)
     }
 }
 
+#[allow(unused_must_use)]
 async fn amx_timeline_client(homeserver_url: String, username: &str, password: &str, c: &Context) -> anyhow::Result<()> {
 
-    // setting.toml
-    let path = "/.config/amx/";
-    let file = path.to_string() + &"setting.toml";
-    let mut f = shellexpand::tilde("~").to_string();
-    f.push_str(&file);
-    println!("{}", f);
-    let check = Path::new(&f).exists();
-    if check == true {
-        let o = fs::read_to_string(&f)?;
-        println!("read {}", o);           
-    }
-    let mut f = fs::File::create(f)?;
-    if let Ok(user) = c.string_flag("user") {
-        let user = &*user.to_string();
-        let setting = Setting {
-            user: user.into(),
-            auto: false,
-        };
-        let toml = toml::to_string(&setting).unwrap();
-        write!(f, "{}", toml)?;
-        f.flush()?;
-        println!("\n#TOML:\n{}", toml);
-    } else {
-        let setting = Setting {
-            user: "all".to_string(),
-            auto: true,
-        };
-        let toml = toml::to_string(&setting).unwrap();
-        write!(f, "{}", toml)?;
-        f.flush()?;
-        println!("\n#TOML:\n{}", toml);
-    }
 
     #[allow(unused_mut)]
     let mut client_builder = Client::builder().homeserver_url(homeserver_url);
@@ -329,6 +372,7 @@ async fn amx_timeline_client(homeserver_url: String, username: &str, password: &
         client_builder = client_builder.indexeddb_store("amx", None).await?;
     }
 
+
     let client = client_builder.build().await?;
     client
         .login_username(username, password)
@@ -338,6 +382,7 @@ async fn amx_timeline_client(homeserver_url: String, username: &str, password: &
     let sync_token = client.sync_once(SyncSettings::default()).await.unwrap().next_batch;
 
     if let Ok(text) = c.string_flag("type") {
+        amx_setting_user(c);
         let status = &*text.to_string();
             match &*status {
                 "vimrc" => client.add_event_handler(amx_timeline_bot_vimrc),
@@ -367,6 +412,7 @@ fn t(c: &Context){
     println!("{:#?}", client);
 }
 
+#[allow(unused_must_use)]
 async fn amx_post_client(homeserver_url: String, username: &str, password: &str, c: &Context) -> anyhow::Result<()> {
     #[allow(unused_mut)]
     let mut client_builder = Client::builder().homeserver_url(homeserver_url);
@@ -379,10 +425,6 @@ async fn amx_post_client(homeserver_url: String, username: &str, password: &str,
     {
         client_builder = client_builder.indexeddb_store("amx", None).await?;
     }
-    #[cfg(feature = "markdown")]
-    {
-        client_builder = client_builder.markdown_store("amx", None).await?;
-    }
 
     let client = client_builder.build().await?;
     client
@@ -391,11 +433,9 @@ async fn amx_post_client(homeserver_url: String, username: &str, password: &str,
         .send()
         .await?;
     client.sync_once(SyncSettings::default()).await.unwrap().next_batch;
-
+    let message = c.args[0].to_string();
+    let content = RoomMessageEventContent::text_plain(&message);
     if let Ok(join) = c.string_flag("join") {
-        let message = c.args[0].to_string();
-        let content = RoomMessageEventContent::text_plain(&message);
-        //let content = RoomMessageEventContent::text_plain(&message);
         let join: &str = &join;
         let room_alias = <&RoomAliasId>::try_from(join).unwrap();
         let room = client.resolve_room_alias(&room_alias).await?;
@@ -406,16 +446,29 @@ async fn amx_post_client(homeserver_url: String, username: &str, password: &str,
             room.send(content, None).await?;
         }
     } else if let Ok(id) = c.string_flag("id") {
-        let message = c.args[0].to_string();
-        let content = RoomMessageEventContent::text_plain(&message);
         let id: &str = &id;
         let room_id = <&RoomId>::try_from(id).unwrap();
         println!("{:#?}", room_id);
         if let Some(room) = client.get_joined_room(&room_id) {
             room.send(content, None).await?;
         }
+    } else if let Ok(_room) = c.string_flag("room") {
+        amx_setting_user(c);
+        amx_setting_room(c);
+        let data = Datasm::new().unwrap();
+        let id: &str = &data.room;
+        let room_id = <&RoomId>::try_from(id).unwrap();
+        if let Some(room) = client.get_joined_room(&room_id) {
+            room.send(content, None).await?;
+        }
+    } else {
+        let data = Datasm::new().unwrap();
+        let id: &str = &data.room;
+        let room_id = <&RoomId>::try_from(id).unwrap();
+        if let Some(room) = client.get_joined_room(&room_id) {
+            room.send(content, None).await?;
+        }
     }
-
     Ok(())
 }
 
@@ -434,6 +487,7 @@ fn p(c: &Context) {
 }
 
 async fn amx_room_client(homeserver_url: String, username: &str, password: &str, c: &Context) -> anyhow::Result<()> {
+
     #[allow(unused_mut)]
     let mut client_builder = Client::builder().homeserver_url(homeserver_url);
     #[cfg(feature = "sled")]
@@ -452,6 +506,7 @@ async fn amx_room_client(homeserver_url: String, username: &str, password: &str,
         .send()
         .await?;
     client.sync_once(SyncSettings::default()).await.unwrap().next_batch;
+
     if let Ok(join) = c.string_flag("join") {
         let join: &str = &join;
         let room_alias = <&RoomAliasId>::try_from(join).unwrap();
