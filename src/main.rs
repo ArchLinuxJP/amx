@@ -80,7 +80,7 @@ fn main() {
                 )
             .flag(
                 Flag::new("room", FlagType::String)
-                .description("room save flag(ex: $ amx p message -r #example:matrix.org)")
+                .description("room save flag(ex: $ amx p message -r '!example:matrix.org')")
                 .alias("r"),
                 )
             )
@@ -240,56 +240,45 @@ async fn amx_timeline_bot_test(event: OriginalSyncRoomMessageEvent, room: Room) 
     }
 }
 
+fn vimrc_file_dl() {
+    use std::process::Command;
+    let path = "/.config/amx/vimrc";
+    let script = ".zsh";
+    let log = "/log.txt";
+    let mut p = shellexpand::tilde("~").to_string();
+    let mut s = shellexpand::tilde("~").to_string();
+    let mut l = shellexpand::tilde("~").to_string();
+    let script = path.to_string() + &script;
+    let log = path.to_string() + &log;
+    p.push_str(&path);
+    s.push_str(&script);
+    l.push_str(&log);
+    println!("{:#?}", s);
+    let check = Path::new(&p).exists();
+    if check == false {
+        Command::new("mkdir").arg("-p").arg(p).spawn().expect("mkdir");
+        Command::new("zsh").arg(s).spawn().expect("zsh");
+    }
+}
+
 fn vimrc_file_read(f: String, line: String, end: String){
+    vimrc_file_dl();
     use std::process::Command;
     println!("{:#?}", end);
     println!("{:#?}", line);
-    let r = shellexpand::tilde("~") + "/.config/amx/log.txt";
-    let r = r.to_string();
-    let check = Path::new(&r).exists();
-    if check == true {
-        fs::remove_file(r).unwrap_or_else(|why| {
-            println!("! {:?}", why.kind());
-        });
-    }
     let awk = "NR==".to_owned() + &line + &",NR==" + &end;
     let output = Command::new("awk").arg(awk).arg(f).output().expect("awk");
     let o = String::from_utf8_lossy(&output.stdout);
-
     let o =  o.to_string();
-    println!("{}", o);
-
     let l = shellexpand::tilde("~") + "/.config/amx/vimrc/log.txt";
     let l = l.to_string();
     let mut l = fs::File::create(l).unwrap();
-    l.write_all(&o.as_bytes()).unwrap();
-    println!("{:#?}", l);
-}
-
-fn vimrc_file_rm() {
-    let path = "/.config/amx/vimrc/";
-    let mut p = shellexpand::tilde("~").to_string();
-    p.push_str(&path);
-    let check = Path::new(&p).is_dir();
-    if check == true {
-        fs::remove_dir_all(path).unwrap_or_else(|why| {
-            println!("! {:?}", why.kind());
-        });
-    }
-}
-
-fn vimrc_file_dl() {
-    use std::process::Command;
-    let path = "/.config/amx/vimrc/";
-    let mut p = shellexpand::tilde("~").to_string();
-    let mut s = shellexpand::tilde("~").to_string();
-    let script = "/.config/amx/vimrc.zsh";
-    p.push_str(&path);
-    s.push_str(&script);
-    println!("{:#?}", s);
-    let check = Path::new(&p).is_dir();
-    if check == false {
-        Command::new("zsh").arg(s).spawn().expect("zsh");
+    println!("{}", o);
+    if o == "" {
+        let o = "donwload vimrc done, once more please!";
+        l.write_all(&o.as_bytes()).unwrap();
+    } else {
+        l.write_all(&o.as_bytes()).unwrap();
     }
 }
 
@@ -331,12 +320,6 @@ async fn amx_timeline_bot_vimrc(event: OriginalSyncRoomMessageEvent, room: Room)
             println!("{:#?}", f);
             println!("{:#?}", l);
 
-            let check = Path::new(&f).exists();
-            if check == false {
-                println!("{}", "download vimrc");
-                vimrc_file_dl();
-            }
-
             let line = tmp.iter().nth(0);
             let end = tmp.iter().nth_back(0);
             println!("{:#?}", end);
@@ -350,15 +333,10 @@ async fn amx_timeline_bot_vimrc(event: OriginalSyncRoomMessageEvent, room: Room)
             room.send(content, None).await.unwrap();
         }
     }
-    if text_content.body.contains("!rm vimrc") {
-        println!("{}", "rm vimrc");
-        vimrc_file_rm();
-    }
 }
 
 #[allow(unused_must_use)]
 async fn amx_timeline_client(homeserver_url: String, username: &str, password: &str, c: &Context) -> anyhow::Result<()> {
-
 
     #[allow(unused_mut)]
     let mut client_builder = Client::builder().homeserver_url(homeserver_url);
@@ -371,7 +349,6 @@ async fn amx_timeline_client(homeserver_url: String, username: &str, password: &
     {
         client_builder = client_builder.indexeddb_store("amx", None).await?;
     }
-
 
     let client = client_builder.build().await?;
     client
