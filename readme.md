@@ -102,6 +102,33 @@ $ amx t --type vimrc -u @syui:syui.cf
 
 fcron : 日時: 毎週土曜日夜23時(JST)
 
+## prompt
+
+```sh
+my_mastodon() {
+		source ~/.config/msr/msr.zsh
+		if [ "${MASTODON_BASE}" = "https://mstdn.syui.cf" ];then
+			export mastodon="%F{blue}${icon_mastodon} : @${USER}%f"
+		else
+			export mastodon="%F{red}${icon_mastodon} : @$USER@${MASTODON_BASE##*/}%f"
+		fi
+	}
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd my_mastodon
+
+my_matrix() {
+		source ~/.config/amx/amx.zsh
+		export MATRIX_BASE=`echo ${MATRIX_BASE##*/}|cut -d . -f 2-3`
+		if [ "${MATRIX_BASE}" = "syui.cf" ];then
+			export matrix="%F{blue}${icon_matrix} : @${MATRIX_USER}%f"
+		else
+			export matrix="%F{red}${icon_matrix} : @$MATRIX_USER:${MATRIX_BASE##*/}%f"
+		fi
+	}
+autoload -Uz add-zsh-hook
+add-zsh-hook precmd my_matrix
+```
+
 ### ref
 
 https://docs.rs/matrix-sdk/latest
