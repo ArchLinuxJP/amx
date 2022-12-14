@@ -44,28 +44,28 @@ fn main() {
         .command(
             Command::new("timeline")
             .usage("amx timeline")
-            .description("timeline(ex : $amx t)")
+            .description("timeline (ex : $amx t)")
             .action(t)
             .alias("t")
             .flag(
                 Flag::new("type", FlagType::String)
-                .description("type flag(ex: $ amx t --type {test,vimrc})")
+                .description("type flag (ex: $ amx t --type {test,vimrc})")
                 )
             .flag(
                 Flag::new("join", FlagType::String)
-                .description("join flag(ex: $ amx t -j #example:matrix.org)")
+                .description("join flag (ex: $ amx t -j #example:matrix.org)")
                 .alias("j"),
                 )
             .flag(
                 Flag::new("user", FlagType::String)
-                .description("user flag(ex: $ amx t --type vimrc -u @syui:syui.cf)")
+                .description("user flag (ex: $ amx t --type vimrc -u @syui:syui.cf)")
                 .alias("u"),
                 )
             )
         .command(
             Command::new("post")
             .usage("amx post {}")
-            .description("post room(ex: $ amx p message -j '#example:matrix.org')")
+            .description("post room (ex: $ amx p message -j '#example:matrix.org')")
             .action(p)
             .alias("p")
             .flag(
@@ -80,7 +80,7 @@ fn main() {
                 )
             .flag(
                 Flag::new("room", FlagType::String)
-                .description("room save flag(ex: $ amx p message -r '!example:matrix.org')")
+                .description("room save flag (ex: $ amx p message -r '!example:matrix.org')")
                 .alias("r"),
                 )
             )
@@ -109,23 +109,12 @@ fn get_domain_zsh() {
     let data = Datas::new().unwrap();
     let homeserver_url = (&data.home_server).to_string();
     let username = (&data.username).to_string();
-    let e = "export MATRIX_BASE=".to_owned() + &homeserver_url + "\n";
+    let e = "export MATRIX_BASE=".to_owned() + &homeserver_url + "\n" + &"export MATRIX_USER=".to_owned() + &username + "\n";
     let e = e.to_string();
-    let u = "export MATRIX_USER=".to_owned() + &username + "\n";
-    let u = u.to_string();
     let f = shellexpand::tilde("~") + "/.config/amx/amx.zsh";
     let f = f.to_string();
-    let r = shellexpand::tilde("~") + "/.config/amx/amx.zsh";
-    let r = r.to_string();
-    let fu = shellexpand::tilde("~") + "/.config/amx/amx.zsh";
-    let fu = fu.to_string();
-    fs::remove_file(r).unwrap_or_else(|why| {
-        println!("! {:?}", why.kind());
-    });
     let mut f = fs::File::create(f).unwrap();
     f.write_all(e.as_bytes()).unwrap();
-    let mut fu = fs::File::create(fu).unwrap();
-    fu.write_all(u.as_bytes()).unwrap();
 }
 
 #[allow(unused_must_use)]
@@ -244,15 +233,11 @@ fn vimrc_file_dl() {
     use std::process::Command;
     let path = "/.config/amx/vimrc";
     let script = ".zsh";
-    let log = "/log.txt";
     let mut p = shellexpand::tilde("~").to_string();
     let mut s = shellexpand::tilde("~").to_string();
-    let mut l = shellexpand::tilde("~").to_string();
     let script = path.to_string() + &script;
-    let log = path.to_string() + &log;
     p.push_str(&path);
     s.push_str(&script);
-    l.push_str(&log);
     println!("{:#?}", s);
     let check = Path::new(&p).exists();
     if check == false {
