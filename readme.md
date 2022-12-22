@@ -89,7 +89,8 @@ $ /usr/bin/create-account -config /etc/dendrite/dendrite.yaml -username xxx -pas
 ```sh
 # server
 $ rm -rf ~/.config/amx/vimrc
-$ cp vimrc.zsh ~/.config/amx/
+$ cp scpt/vimrc.zsh ~/.config/amx/
+$ cp scpt/vimdoc.zsh ~/.config/amx/
 $ vimrc.zsh
 
 $ amx a -s
