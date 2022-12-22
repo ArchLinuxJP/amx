@@ -30,6 +30,7 @@ pub struct Datam {
     pub user: String,
     pub auto: bool,
     pub room: String,
+    pub room_id: String,
 }
 
 impl Datam {

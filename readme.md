@@ -35,7 +35,7 @@ $ amx p "hello world" -j '#example:matrix.org'
 $ amx p "hello world" -i '!example:matrix.org'
 
 # message post : save room
-$ amx p "hello world" -r '!example:matrix.org'
+$ amx p "hello world" -r '#example:matrix.org'
 $ amx p "2"
 
 # join room
@@ -87,7 +87,7 @@ $ /usr/bin/create-account -config /etc/dendrite/dendrite.yaml -username xxx -pas
 ```
 
 ```sh
-# start
+# server
 $ rm -rf ~/.config/amx/vimrc
 $ cp vimrc.zsh ~/.config/amx/
 $ vimrc.zsh
@@ -98,6 +98,15 @@ $ amx t --type vimrc
 
 # check user
 $ amx t --type vimrc -u @syui:syui.cf
+```
+
+
+```sh
+# client
+$ amx p '!init.vim#1-2' -r '#vim-jp_reading-vimrc:gitter.im'
+$ amx p ':listener_add'
+or
+$ amx p '!init.vim#1-2' --room_id '!nSpBuqIwPsRatnPFsb:gitter.im'
 ```
 
 fcron : 日時: 毎週土曜日夜23時(JST)

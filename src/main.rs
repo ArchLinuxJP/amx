@@ -25,6 +25,7 @@ struct Setting {
     user: String,
     auto: bool,
     room: String,
+    room_id: String,
 }
 
 fn main() {
@@ -80,11 +81,15 @@ fn main() {
                 )
             .flag(
                 Flag::new("room", FlagType::String)
-                .description("room save flag (ex: $ amx p message -r '!example:matrix.org')")
+                .description("room save flag (ex: $ amx p message -r '#example:matrix.org')")
                 .alias("r"),
                 )
+            .flag(
+                Flag::new("room_id", FlagType::String)
+                .description("room save flag (ex: $ amx p message --room_id '!example:matrix.org')")
+                )
             )
-        .command(
+            .command(
             Command::new("room")
             .usage("amx room")
             .description("join room (ex: $ amx r -j '#example:matrix.org')")
@@ -158,6 +163,7 @@ fn amx_setting_user(c: &Context) -> io::Result<()> {
             user: user.into(),
             auto: false,
             room: "".to_string(),
+            room_id: "".to_string(),
         };
         let toml = toml::to_string(&setting).unwrap();
         write!(f, "{}", toml)?;
@@ -168,6 +174,7 @@ fn amx_setting_user(c: &Context) -> io::Result<()> {
             user: "all".to_string(),
             auto: true,
             room: "".to_string(),
+            room_id: "".to_string(),
         };
         let toml = toml::to_string(&setting).unwrap();
         write!(f, "{}", toml)?;
@@ -200,12 +207,48 @@ fn amx_setting_room(c: &Context) -> io::Result<()> {
             user: user,
             auto: auto,
             room: room.into(),
+            room_id: "".to_string(),
         };
         let toml = toml::to_string(&setting).unwrap();
         write!(f, "{}", toml)?;
         f.flush()?;
         println!("\n#TOML:\n{}", toml);
     }
+
+    Ok(())
+}
+
+#[allow(unused_must_use)]
+fn amx_setting_room_id(c: &Context) -> io::Result<()> {
+    let path = "/.config/amx/";
+    let file = path.to_string() + &"setting.toml";
+    let mut f = shellexpand::tilde("~").to_string();
+    f.push_str(&file);
+    println!("{}", f);
+    let check = Path::new(&f).exists();
+    if check == true {
+        let o = fs::read_to_string(&f)?;
+        println!("read {}", o);           
+    }
+    let data = Datasm::new().unwrap();
+    let user = data.user;
+    let auto = data.auto;
+    let mut f = fs::File::create(f)?;
+
+    if let Ok(room_id) = c.string_flag("room_id") {
+        let room_id = &*room_id.to_string();
+        let setting = Setting {
+            user: user,
+            auto: auto,
+            room: "".to_string(),
+            room_id: room_id.into(),
+        };
+        let toml = toml::to_string(&setting).unwrap();
+        write!(f, "{}", toml)?;
+        f.flush()?;
+        println!("\n#TOML:\n{}", toml);
+    }
+
     Ok(())
 }
 
@@ -471,6 +514,20 @@ async fn amx_post_client(homeserver_url: String, username: &str, password: &str,
         amx_setting_room(c);
         let data = Datasm::new().unwrap();
         let id: &str = &data.room;
+        //let room_id = <&RoomId>::try_from(id).unwrap();
+        let room_alias = <&RoomAliasId>::try_from(id).unwrap();
+        let room = client.resolve_room_alias(&room_alias).await?;
+        //let room_alias = <&RoomOrAliasId>::try_from(id).unwrap();
+        //let room = client.join_room_by_id_or_alias(&room_alias,&[OwnedServerName]).await?;
+        let room_id = room.room_id;
+        if let Some(room) = client.get_joined_room(&room_id) {
+            room.send(content, None).await?;
+        }
+    } else if let Ok(_room_id) = c.string_flag("room_id") {
+        amx_setting_user(c);
+        amx_setting_room_id(c);
+        let data = Datasm::new().unwrap();
+        let id: &str = &data.room_id;
         let room_id = <&RoomId>::try_from(id).unwrap();
         if let Some(room) = client.get_joined_room(&room_id) {
             room.send(content, None).await?;
@@ -478,9 +535,20 @@ async fn amx_post_client(homeserver_url: String, username: &str, password: &str,
     } else {
         let data = Datasm::new().unwrap();
         let id: &str = &data.room;
-        let room_id = <&RoomId>::try_from(id).unwrap();
-        if let Some(room) = client.get_joined_room(&room_id) {
-            room.send(content, None).await?;
+        if id == "" {
+            let id: &str = &data.room_id;
+            let room_id = <&RoomId>::try_from(id).unwrap();
+            if let Some(room) = client.get_joined_room(&room_id) {
+                room.send(content, None).await?;
+            }
+        } else {
+            //let room_id = <&RoomId>::try_from(id).unwrap();
+            let room_alias = <&RoomAliasId>::try_from(id).unwrap();
+            let room = client.resolve_room_alias(&room_alias).await?;
+            let room_id = room.room_id;
+            if let Some(room) = client.get_joined_room(&room_id) {
+                room.send(content, None).await?;
+            }
         }
     }
     Ok(())
