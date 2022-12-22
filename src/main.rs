@@ -267,6 +267,31 @@ fn vimrc_file_read(f: String, line: String, end: String){
     }
 }
 
+fn vimrc_help_read(f: String){
+    use std::process::Command;
+    let path = "/.config/amx/vimdoc";
+    let script = ".zsh";
+    let mut p = shellexpand::tilde("~").to_string();
+    let mut s = shellexpand::tilde("~").to_string();
+    let script = path.to_string() + &script;
+    p.push_str(&path);
+    s.push_str(&script);
+    println!("{:#?}", s);
+    let output = Command::new("zsh").arg(s).arg(f).output().expect("zsh");
+    let o = String::from_utf8_lossy(&output.stdout);
+    let o =  o.to_string();
+    let l = shellexpand::tilde("~") + "/.config/amx/vimrc/help.txt";
+    let l = l.to_string();
+    let mut l = fs::File::create(l).unwrap();
+    println!("{}", o);
+    if o == "" {
+        let o = "donwload help done, once more please!";
+        l.write_all(&o.as_bytes()).unwrap();
+    } else {
+        l.write_all(&o.as_bytes()).unwrap();
+    }
+}
+
 // vimrc-bot:!filename.vim#1-2
 async fn amx_timeline_bot_vimrc(event: OriginalSyncRoomMessageEvent, room: Room) {
     let Room::Joined(room) = room else { return };
@@ -314,6 +339,31 @@ async fn amx_timeline_bot_vimrc(event: OriginalSyncRoomMessageEvent, room: Room)
             let ed = "</code></pre>";
             let oo =  st.to_owned() + &o.to_string() + &ed;
             //let content = RoomMessageEventContent::text_markdown(&o);
+            let content = RoomMessageEventContent::text_html(&o, &oo);
+            room.send(content, None).await.unwrap();
+        }
+    }
+
+    if text_content.body.contains(":") {
+        if s == *u || auto == true {
+            let t = text_content.body.split_inclusive(':').collect::<Vec<_>>();
+            let f = &t[1].to_string();
+            vimrc_help_read(f.to_string());
+
+            let logs = "help.txt".to_string();
+            let path = "/.config/amx/vimrc/";
+            let logs = path.to_string() + &logs;
+            let mut p = shellexpand::tilde("~").to_string();
+            let mut l = shellexpand::tilde("~").to_string();
+            p.push_str(&path);
+            l.push_str(&logs);
+            println!("{:#?}", f);
+            println!("{:#?}", l);
+
+            let o = fs::read_to_string(&l).expect("could not read file");
+            let st = "<pre><code>";
+            let ed = "</code></pre>";
+            let oo =  st.to_owned() + &o.to_string() + &ed;
             let content = RoomMessageEventContent::text_html(&o, &oo);
             room.send(content, None).await.unwrap();
         }
