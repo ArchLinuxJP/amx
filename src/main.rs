@@ -283,10 +283,8 @@ fn vimrc_help_read(f: String){
     let l = shellexpand::tilde("~") + "/.config/amx/vimrc/help.txt";
     let l = l.to_string();
     let mut l = fs::File::create(l).unwrap();
-    println!("{}", o);
     if o == "" {
-        let o = "donwload help done, once more please!";
-        l.write_all(&o.as_bytes()).unwrap();
+        println!("{}", o);
     } else {
         l.write_all(&o.as_bytes()).unwrap();
     }
@@ -361,11 +359,15 @@ async fn amx_timeline_bot_vimrc(event: OriginalSyncRoomMessageEvent, room: Room)
             println!("{:#?}", l);
 
             let o = fs::read_to_string(&l).expect("could not read file");
-            let st = "<pre><code>";
-            let ed = "</code></pre>";
-            let oo =  st.to_owned() + &o.to_string() + &ed;
-            let content = RoomMessageEventContent::text_html(&o, &oo);
-            room.send(content, None).await.unwrap();
+            if o == "" {
+                println!("{:#?}", o);
+            } else {
+                let st = "<pre><code>";
+                let ed = "</code></pre>";
+                let oo =  st.to_owned() + &o.to_string() + &ed;
+                let content = RoomMessageEventContent::text_html(&o, &oo);
+                room.send(content, None).await.unwrap();
+            }
         }
     }
 }
