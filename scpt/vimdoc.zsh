@@ -10,10 +10,16 @@ if [ -z "$1" ];then
 	exit
 fi
 
-a=`grep -Rn "*$1*" $f|cut -d : -f 2`
-b=`grep -Rn "^\s*$" $f|cut -d : -f 2`
-b=`expr $a + 500`
+case $OSTYPE in
+	darwin*)
+		a=`grep -Rn "*$1*" $f|cut -d : -f 2`
+		;;
+	linux*)
+		a=`grep -Rn "*$1*" $f|cut -d : -f 1`
+		;;
+esac
+
+b=$(($a + 500))
 tmp=`awk "NR==$a,NR==$b" $f`
 b=`echo "$tmp"|grep -n "^[a-z]"|awk "NR==2"|cut -d : -f 1`
-
 echo "$tmp"|awk "NR==1,NR==$b"|sed -e '$d' 
