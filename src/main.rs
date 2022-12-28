@@ -248,8 +248,12 @@ fn amx_setting_room_id(c: &Context) -> io::Result<()> {
         f.flush()?;
         println!("\n#TOML:\n{}", toml);
     }
-
     Ok(())
+}
+
+fn notify_os_command(room_id: String, u: String, body: String) {
+    use std::process::Command;
+    Command::new("terminal-notifier").arg("-title").arg(room_id).arg("-subtitle").arg(u).arg("-message").arg(body).spawn().expect("notfiy-mac");
 }
 
 async fn amx_timeline(event: OriginalSyncRoomMessageEvent, room: Room) {
@@ -257,7 +261,10 @@ async fn amx_timeline(event: OriginalSyncRoomMessageEvent, room: Room) {
     let room_id = room.room_id();
     let u = event.sender;
     let body = event.content.body();
-    println!("{} {} {}", room_id, u, body);
+    let room_avatar = room.avatar_url();
+    println!("{} {} {} {:#?}", room_id, u, body, room_avatar);
+    println!("{:#?}", room_avatar);
+    notify_os_command(room_id.to_string(), u.to_string(), body.to_string());
 }
 
 // test-bot:!party
