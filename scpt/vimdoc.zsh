@@ -20,7 +20,7 @@ case $OSTYPE in
 	darwin*)
 		a=`grep -Rn "*$1*" $f|cut -d : -f 2|head -n 1`
 		af=`grep -ril "$1" $fn|tail -n 1`
-		an=`grep -Rn "*$1*" $af|cut -d : -f 1|head -n 1`
+		an=`grep -Rn "*$1*" $af|cut -d : -f 2|head -n 1`
 		;;
 	linux*)
 		a=`grep -Rn "*$1*" $f|cut -d : -f 1|head -n 1`
