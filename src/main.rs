@@ -260,9 +260,17 @@ async fn amx_timeline(event: OriginalSyncRoomMessageEvent, room: Room) {
     let Room::Joined(room) = room else { return };
     let room_id = room.room_id();
     let u = event.sender;
-    let body = event.content.body();
+    let c_body = event.content;
+    let body = c_body.body();
+    let name = room.name();
+    let alias = room.canonical_alias();
+    let content = room.tombstone();
     let room_avatar = room.avatar_url();
-    println!("{} {} {} {:#?}", room_id, u, body, room_avatar);
+    println!("{:#?}", c_body);
+    println!("{:#?} {} {} {}",alias, room_id, u, body);
+    println!("{:#?}", room_avatar);
+    println!("{:#?}", name);
+    println!("{:#?}", content);
     println!("{:#?}", room_avatar);
     notify_os_command(room_id.to_string(), u.to_string(), body.to_string());
 }
@@ -356,7 +364,7 @@ async fn amx_timeline_bot_vimrc(event: OriginalSyncRoomMessageEvent, room: Room)
             let t = text_content.body.split_inclusive('!').collect::<Vec<_>>();
 
             let file = &t[1].to_string();
-            let tt = file.split_inclusive('#').collect::<Vec<_>>();
+            let tt = file.split_inclusive('^').collect::<Vec<_>>();
             let file = &tt[0];
             let line = &tt[1];
             let tmp = line.split('-').collect::<Vec<_>>();

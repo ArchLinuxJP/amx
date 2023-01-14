@@ -104,10 +104,11 @@ $ amx t --type vimrc -u @syui:syui.cf
 
 ```sh
 # client
-$ amx p '!init.vim#1-2' -r '#vim-jp_reading-vimrc:gitter.im'
+$ amx p '!init.vim^1-2' -r '#vim-jp_reading-vimrc:gitter.im'
+# /usr/share/nvim/doc/lua.txt
 $ amx p ':listener_add'
 or
-$ amx p '!init.vim#1-2' --room_id '!nSpBuqIwPsRatnPFsb:gitter.im'
+$ amx p '!init.vim^1-2' --room_id '!nSpBuqIwPsRatnPFsb:gitter.im'
 ```
 
 fcron : 日時: 毎週土曜日夜23時(JST)
