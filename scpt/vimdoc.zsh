@@ -33,12 +33,12 @@ if [ -n "$a" ];then
 	b=$(($a + 500))
 	tmp=`awk "NR==$a,NR==$b" $f`
 	b=`echo "$tmp"|grep -n "^[a-z]"|awk "NR==2"|cut -d : -f 1|head -n 1`
-	echo "$tmp"|awk "NR==1,NR==$b"|sed -e '$d' 
+	echo "$tmp"|awk "NR==1,NR==$b"|sed -e '$d'|sed  '/^$/d'
 fi
 
 if [ -n "$an" ];then
 	bn=$(($an + 500))
 	tmpn=`awk "NR==$an,NR==$bn" $af`
 	bn=`echo "$tmpn"|grep -n "^[a-z]"|awk "NR==2"|cut -d : -f 1|head -n 1`
-	echo "$tmpn"|awk "NR==1,NR==$bn"|sed -e '$d' 
+	echo "$tmpn"|awk "NR==1,NR==$bn"|sed -e '$d'|sed  '/^$/d' 
 fi
