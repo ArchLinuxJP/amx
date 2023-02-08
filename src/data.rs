@@ -7,10 +7,8 @@ use std::borrow::Cow;
 #[allow(unused)]
 pub struct Data {
     pub home_server: Cow<'static, str>,
-    pub access_token: Cow<'static, str>,
     pub username: Cow<'static, str>,
     pub password: Cow<'static, str>,
-    pub room_id: Cow<'static, str>,
 }
 
 impl Data {
