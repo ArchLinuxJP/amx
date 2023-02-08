@@ -29,8 +29,8 @@ fn main() {
             .alias("t")
             .flag(
                 Flag::new("bot", FlagType::Bool)
-                .description("bot flag (ex: $ amx t -bot)")
-                .alias("bot"),
+                .description("bot flag (ex: $ amx t --bot, $ amx t -b)")
+                .alias("b"),
                 )
             )
         .command(
