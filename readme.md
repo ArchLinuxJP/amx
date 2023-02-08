@@ -3,6 +3,13 @@
 ## install
 
 ```sh
+$ sudo pacman -S rust --noconfirm
+$ git clone https://github.com/ArchLinuxJP/amx
+$ cd amx
+```
+
+```sh
+$ cargo version
 $ cargo build
 
 $ mkdir -p ~/.config/amx
